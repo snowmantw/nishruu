@@ -1,9 +1,12 @@
 (ns nishruu.core
   (:gen-class)
-  (:require [instaparse.core :as insta]))
+  (:require [instaparse.core :as insta])
+  (:require [clojure.tools.trace :as trace])
+)
 
 (def sample "CAATTGCCATGG")
 (def dnaSliceInit {:position 0 :dna "" :rest ""})
+(def dnaSliceInitVector {:position 0 :dna [] :dnas []})
 
 (defn -main
   "I don't do a whole lot ... yet."
@@ -17,9 +20,6 @@
     (def numstr (read-string (first (line-seq rdr)))))
   (println (+ 99 numstr))
 )
-
-(def sample "CAATTGCCATGG")
-(def dnaSliceInit {:position 0 :dna "" :rest ""})
 
 ; Trick to simplify the syntax:
 ; (identity foo) --> (do foo)
@@ -68,6 +68,27 @@
       ((fn [acc] (update-in acc [:dna] #(str % x))))
       ((fn [acc] (assoc-in acc [:rest] "")))
     )
+  )
+)
+
+; ^:dynamic: for tracing:
+; (trace/dotrace [dnaSliceVector] (reduce dnaSliceVector dnaSliceInitVector sample))
+(defn ^:dynamic dnaSliceVector
+  "do DNA slicing with vectors"
+  [acc x]
+  (cond
+    (> 5 (acc :position))
+      (do ;extend the current DNA sequence.
+        {:position (+ 1 (acc :position))
+         :dna (conj (acc :dna) x)
+         :dnas (acc :dnas)
+      })
+    (= 5 (acc :position))
+      (do ;put the result in the final DNAs sequence.
+        {:position 0    ; reset it
+         :dna []        ; reset it
+         :dnas (conj (acc :dnas) (conj (acc :dna) x))
+      })
   )
 )
 
